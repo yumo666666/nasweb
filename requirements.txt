@@ -1,0 +1,13 @@
+# NAS监控系统依赖包
+# 使用方法: pip install -r requirements.txt
+
+# 系统信息获取
+psutil>=5.8.0
+
+# Web框架和API服务
+fastapi>=0.68.0
+uvicorn[standard]>=0.15.0
+
+# 可选依赖（用于更好的性能）
+# python-multipart>=0.0.5  # 用于处理表单数据
+# aiofiles>=0.7.0          # 异步文件操作

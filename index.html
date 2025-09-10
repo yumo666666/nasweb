@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控仪表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #ff69b4;
+            --secondary-color: #ffb6c1;
+            --background-color: #ffe4e1;
+            --text-color: #333;
+            --border-color: #000;
+            --progress-bg: #f0f0f0;
+        }
+
+        [data-theme="blue"] {
+            --primary-color: #4169e1;
+            --secondary-color: #87ceeb;
+            --background-color: #e6f3ff;
+            --text-color: #333;
+            --border-color: #000;
+            --progress-bg: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 主网格容器 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 4px;
+            height: 100vh;
+            width: 100vw;
+            padding: 10px 30px;
+        }
+
+        /* 组件基础样式 */
+        .component {
+            border: 2px solid var(--border-color);
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        /* 顶部组件样式 */
+        .component-top {
+            grid-row: 1 / 2;
+            grid-column: 1 / 9;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .ip-selector {
+            position: relative;
+        }
+
+        .ip-display {
+            background: var(--secondary-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ip-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            min-width: 200px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .ip-option {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .ip-option:hover {
+            background: var(--background-color);
+        }
+
+        /* 组件1: 时钟和网络 */
+        .component-1 {
+            grid-row: 2 / 6;
+            grid-column: 1 / 3;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .clock {
+            font-size: 3.75em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .network-info {
+            font-size: 1.35em;
+            color: var(--text-color);
+        }
+
+        .network-speed {
+            margin: 5px 0;
+        }
+
+        /* 组件2: CPU */
+        .component-2 {
+            grid-row: 2 / 4;
+            grid-column: 3 / 7;
+        }
+
+        /* 组件3: 内存 */
+        .component-3 {
+            grid-row: 4 / 6;
+            grid-column: 3 / 7;
+        }
+
+        /* 进度条样式 */
+        .progress-container {
+            position: relative;
+            margin: 10px 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--progress-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+             position: absolute;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             color: black;
+             font-size: 12px;
+             font-weight: bold;
+         }
+
+        /* 组件4: 硬盘总容量圆形进度条 */
+        .component-4 {
+            grid-row: 2 / 6;
+            grid-column: 7 / 9;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+        }
+
+        .circular-progress svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .progress-bg-circle {
+            stroke: var(--progress-bg);
+        }
+
+        .progress-circle {
+            stroke: var(--primary-color);
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.5s ease;
+        }
+
+        .circular-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 21px;
+            color: var(--text-color);
+        }
+
+        /* 组件5-8: 按钮 */
+        .component-5, .component-6, .component-7, .component-8 {
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .component-5 {
+            grid-row: 6 / 7;
+            grid-column: 1 / 2;
+        }
+
+        .component-6 {
+            grid-row: 6 / 7;
+            grid-column: 2 / 3;
+        }
+
+        .component-7 {
+            grid-row: 7 / 8;
+            grid-column: 1 / 2;
+        }
+
+        .component-8 {
+            grid-row: 7 / 8;
+            grid-column: 2 / 3;
+        }
+
+        .component-5:hover, .component-6:hover, .component-7:hover, .component-8:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 组件9: GIF展示区域 */
+        .component-9 {
+            grid-row: 6 / 8;
+            grid-column: 3 / 7;
+            justify-content: center;
+            align-items: center;
+            background: #f8f8f8;
+            border-style: dashed;
+            cursor: pointer;
+            gap: 10px;
+        }
+        
+        .gif-container {
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr 1fr;
+              grid-template-rows: 1fr;
+              gap: 5px;
+              width: 100%;
+              height: 100%;
+          }
+         
+         .gif-item {
+             height: 100%;
+             border-radius: 8px;
+             overflow: hidden;
+             cursor: pointer;
+             transition: transform 0.2s ease;
+         }
+         
+         .gif-item:hover {
+             transform: scale(1.05);
+         }
+         
+         .gif-item img {
+             width: 100%;
+             height: 100%;
+             object-fit: cover;
+             border-radius: 8px;
+         }
+
+        /* 组件10: 硬盘列表 */
+         .component-10 {
+             grid-row: 6 / 8;
+             grid-column: 7 / 9;
+             cursor: pointer;
+             transition: all 0.3s ease;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+         }
+
+         .disk-summary {
+             padding: 10px;
+             background: var(--background-color);
+             border-radius: 6px;
+         }
+
+         .disk-expanded {
+             position: fixed;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             background: white;
+             border: 3px solid var(--border-color);
+             border-radius: 12px;
+             padding: 20px;
+             max-height: 70vh;
+             overflow-y: auto;
+             z-index: 2000;
+             min-width: 400px;
+             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+         }
+
+         .disk-overlay {
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background: rgba(0,0,0,0.5);
+             z-index: 1999;
+         }
+
+         .disk-item {
+             margin-bottom: 15px;
+             padding: 10px;
+             background: var(--background-color);
+             border-radius: 6px;
+         }
+
+         .disk-name {
+             font-size: 12px;
+             margin-bottom: 5px;
+             color: var(--text-color);
+         }
+
+         .disk-progress {
+             height: 15px;
+             background: var(--progress-bg);
+             border-radius: 8px;
+             overflow: hidden;
+             position: relative;
+         }
+
+         .disk-progress-fill {
+             height: 100%;
+             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+             transition: width 0.5s ease;
+         }
+
+         .disk-info {
+             font-size: 10px;
+             margin-top: 3px;
+             color: black;
+         }
+
+         .disk-expanded-header {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             margin-bottom: 20px;
+             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+             padding-bottom: 10px;
+         }
+
+         .disk-expanded-header h3 {
+             margin: 0;
+             color: var(--text-color);
+         }
+
+         .close-btn {
+             background: none;
+             border: none;
+             font-size: 24px;
+             color: var(--text-color);
+             cursor: pointer;
+             padding: 0;
+             width: 30px;
+             height: 30px;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             border-radius: 50%;
+             transition: background 0.3s ease;
+         }
+
+         .close-btn:hover {
+             background: rgba(0, 0, 0, 0.1);
+         }
+
+         .disk-detail-list {
+             display: flex;
+             flex-direction: column;
+             gap: 15px;
+         }
+
+         .disk-detail-list .disk-item {
+             background: var(--background-color);
+             border-radius: 10px;
+             padding: 15px;
+         }
+
+         .fullscreen-btn {
+             background: var(--secondary-color);
+             color: var(--text-color);
+             border: none;
+             padding: 8px 16px;
+             border-radius: 8px;
+             cursor: pointer;
+             font-weight: bold;
+             transition: all 0.3s ease;
+             margin-left: 10px;
+         }
+
+         .fullscreen-btn:hover {
+             opacity: 0.8;
+             transform: scale(1.05);
+         }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 顶部组件: 主题切换、全屏和IP选择 -->
+         <div class="component component-top">
+             <div>
+                 <button class="theme-toggle" onclick="toggleTheme()">🎨 主题切换</button>
+                 <button class="fullscreen-btn" onclick="toggleFullscreen()">🔳 全屏</button>
+             </div>
+             <div class="ip-selector">
+                 <div class="ip-display" onclick="toggleIpDropdown()" id="currentIp">192.168.101.102</div>
+                 <div class="ip-dropdown" id="ipDropdown">
+                     <!-- IP选项将通过JavaScript动态生成 -->
+                 </div>
+             </div>
+         </div>
+        
+        <!-- 组件1: 时钟和网络 -->
+        <div class="component component-1">
+            <div class="clock" id="clock">20:36</div>
+            <div class="network-info">
+                <div class="network-speed">↑ <span id="uploadSpeed">0.354</span> MB/s</div>
+                <div class="network-speed">↓ <span id="downloadSpeed">0.111</span> MB/s</div>
+            </div>
+        </div>
+        
+        <!-- 组件2: CPU -->
+        <div class="component component-2">
+            <div class="progress-header">
+                <span>🖥️ CPU</span>
+                <span id="cpuTemp">--°C</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuProgress" style="width: 11.9%"></div>
+                    <div class="progress-text" id="cpuText">11.9% 使用中</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 组件3: 内存 -->
+        <div class="component component-3">
+            <div class="progress-header">
+                <span>📊 RAM</span>
+                <span id="memoryInfo">19.53GB / 63.93GB</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryProgress" style="width: 30.5%"></div>
+                    <div class="progress-text" id="memoryText">30.5% 使用中</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 组件4: 硬盘总容量 -->
+        <div class="component component-4">
+            <h3 style="text-align: center; margin-bottom: 15px;">💾 总容量</h3>
+            <div class="circular-progress">
+                <svg>
+                    <circle class="progress-bg-circle" cx="60" cy="60" r="52"></circle>
+                    <circle class="progress-circle" cx="60" cy="60" r="52" id="totalDiskCircle"></circle>
+                </svg>
+                <div class="circular-text">
+                    <div id="totalDiskPercent">77%</div>
+                    <div style="font-size: 10px; margin-top: 5px;" id="totalDiskInfo">1469GB / 1908GB</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 组件5-8: 功能按钮 -->
+        <div class="component component-5">按钮1</div>
+        <div class="component component-6">按钮2</div>
+        <div class="component component-7">按钮3</div>
+        <div class="component component-8">按钮4</div>
+        
+        <!-- 组件9: GIF展示区域 -->
+        <div class="component component-9" id="component9">
+                     <div class="gif-container" id="gifContainer">
+                         <div class="gif-item" onclick="switchSingleGif(0)">
+                             <img id="gif1" src="" alt="GIF 1">
+                         </div>
+                         <div class="gif-item" onclick="switchSingleGif(1)">
+                             <img id="gif2" src="" alt="GIF 2">
+                         </div>
+                         <div class="gif-item" onclick="switchSingleGif(2)">
+                             <img id="gif3" src="" alt="GIF 3">
+                         </div>
+                         <div class="gif-item" onclick="switchSingleGif(3)">
+                             <img id="gif4" src="" alt="GIF 4">
+                         </div>
+                     </div>
+                 </div>
+        
+        <!-- 组件10: 硬盘列表 -->
+         <div class="component component-10" onclick="showDiskDetails()">
+             <div id="diskSummary">
+                 <!-- 硬盘摘要将通过JavaScript动态生成 -->
+             </div>
+         </div>
+
+         <!-- 硬盘详情弹窗 -->
+         <div id="diskOverlay" class="disk-overlay" style="display: none;" onclick="hideDiskDetails()"></div>
+         <div id="diskExpanded" class="disk-expanded" style="display: none;">
+             <div class="disk-expanded-header">
+                 <button onclick="hideDiskDetails()" class="close-btn">×</button>
+             </div>
+             <div id="diskDetailList" class="disk-detail-list">
+                 <!-- 硬盘详细列表将通过JavaScript动态生成 -->
+             </div>
+         </div>
+    </div>
+
+    <script>
+        // GIF文件列表（动态从服务器获取）
+         let gifFiles = [];
+         let currentGifs = [null, null, null, null];
+         
+         // 配置信息
+         let config = {
+             frontend_port: 8003,
+             backend_port: 8002
+         };
+         
+         /**
+          * 从配置文件获取端口配置
+          */
+         async function fetchConfig() {
+             try {
+                 const response = await fetch('/config.json');
+                 if (response.ok) {
+                     config = await response.json();
+                     console.log('配置加载成功:', config);
+                 } else {
+                     console.warn('配置文件加载失败，使用默认配置');
+                 }
+             } catch (error) {
+                 console.warn('配置文件读取出错，使用默认配置:', error);
+             }
+         }
+         
+         /**
+          * 从API获取图片文件列表
+          */
+         async function fetchImageFiles() {
+             try {
+                 const currentHost = window.location.hostname;
+                 const apiUrl = `http://${currentHost}:${config.backend_port}/image-files`;
+                 
+                 const response = await fetch(apiUrl);
+                 if (response.ok) {
+                     const data = await response.json();
+                     gifFiles = data.files || [];
+                     console.log('图片文件列表更新成功:', gifFiles);
+                     return true;
+                 } else {
+                     console.error('获取图片文件列表失败:', response.status);
+                     // 使用默认文件列表作为备用
+                     gifFiles = ['1.gif', '2.gif', '4.gif'];
+                     return false;
+                 }
+             } catch (error) {
+                 console.error('获取图片文件列表出错:', error);
+                 // 使用默认文件列表作为备用
+                 gifFiles = ['1.gif', '2.gif', '4.gif'];
+                 return false;
+             }
+         }
+        
+        // 系统数据存储变量
+        let systemData = {};
+        
+        /**
+         * 从API获取系统数据
+         */
+        async function fetchSystemData() {
+            try {
+                // 动态获取当前页面的主机地址，支持局域网访问
+                const currentHost = window.location.hostname;
+                const apiUrl = `http://${currentHost}:${config.backend_port}/system-info`;
+                
+                const response = await fetch(apiUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    systemData = data;
+                    console.log('系统数据更新成功:', data);
+                    return true;
+                } else {
+                    console.error('API响应错误:', response.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('获取系统数据失败:', error);
+                return false;
+            }
+        }
+
+        /**
+           * 初始化页面数据显示
+           */
+          async function initializeData() {
+              // 先获取配置
+              await fetchConfig();
+              
+              // 然后获取图片文件列表
+              await fetchImageFiles();
+              
+              const success = await fetchSystemData();
+              if (success) {
+                  updateCPUInfo();
+                  updateMemoryInfo();
+                  updateDiskInfo();
+                  updateDiskSummary();
+                  updateNetworkInfo();
+                  generateIPDropdown();
+              }
+              updateClock();
+              initializeGifs();
+          }
+         
+         /**
+          * 初始化GIF显示
+          */
+         function initializeGifs() {
+             // 为每个位置随机分配GIF
+             for (let i = 0; i < 4; i++) {
+                 switchSingleGif(i);
+             }
+         }
+         
+         /**
+          * 随机切换单个GIF图片
+          * @param {number} index - GIF位置索引 (0-3)
+          */
+         function switchSingleGif(index) {
+             // 获取当前图片文件名
+             const currentGif = currentGifs[index];
+             
+             // 创建可选择的GIF列表（排除当前图片）
+             const availableGifs = gifFiles.filter(gif => gif !== currentGif);
+             
+             // 如果没有其他可选择的图片，则不进行切换
+             if (availableGifs.length === 0) {
+                 return;
+             }
+             
+             // 从可选择的图片中随机选择一个
+             const randomIndex = Math.floor(Math.random() * availableGifs.length);
+             const selectedGif = availableGifs[randomIndex];
+             
+             // 更新对应位置的GIF
+             currentGifs[index] = selectedGif;
+             document.getElementById(`gif${index + 1}`).src = `image/${selectedGif}`;
+         }
+
+        /**
+         * 更新CPU信息显示
+         */
+        function updateCPUInfo() {
+            if (!systemData.cpu) return;
+            
+            const cpuUsage = systemData.cpu.usage_percent;
+            const cpuTemp = systemData.cpu.temperature_c;
+            
+            document.getElementById('cpuProgress').style.width = cpuUsage + '%';
+            document.getElementById('cpuText').textContent = cpuUsage + '% 使用中';
+            document.getElementById('cpuTemp').textContent = cpuTemp ? cpuTemp + '°C' : '--°C';
+        }
+
+        /**
+         * 更新内存信息显示
+         */
+        function updateMemoryInfo() {
+            if (!systemData.memory) return;
+            
+            const used = systemData.memory.used_gb;
+            const total = systemData.memory.total_gb;
+            const percentage = ((used / total) * 100).toFixed(1);
+            
+            document.getElementById('memoryProgress').style.width = percentage + '%';
+            document.getElementById('memoryText').textContent = percentage + '% 使用中';
+            document.getElementById('memoryInfo').textContent = used + 'GB / ' + total + 'GB';
+        }
+
+        /**
+          * 更新硬盘信息显示
+          */
+         function updateDiskInfo() {
+             if (!systemData.storage || !systemData.storage.disks) return;
+             
+             // 更新总容量圆形进度条
+             const totalUsed = systemData.storage.disks.reduce((sum, disk) => sum + disk.used_gb, 0);
+             const totalCapacity = systemData.storage.disks.reduce((sum, disk) => sum + disk.total_gb, 0);
+             const totalPercentage = ((totalUsed / totalCapacity) * 100).toFixed(0);
+             
+             const circumference = 2 * Math.PI * 52;
+             const offset = circumference - (totalPercentage / 100) * circumference;
+             
+             const circle = document.getElementById('totalDiskCircle');
+             circle.style.strokeDasharray = circumference;
+             circle.style.strokeDashoffset = offset;
+             
+             document.getElementById('totalDiskPercent').textContent = totalPercentage + '%';
+             document.getElementById('totalDiskInfo').textContent = totalUsed.toFixed(0) + 'GB / ' + totalCapacity.toFixed(0) + 'GB';
+         }
+
+         /**
+          * 更新硬盘摘要显示（仅显示第一块硬盘）
+          */
+         function updateDiskSummary() {
+             if (!systemData.storage || !systemData.storage.disks) return;
+             
+             const diskSummary = document.getElementById('diskSummary');
+             if (systemData.storage.disks.length > 0) {
+                 const firstDisk = systemData.storage.disks[0];
+                 const percentage = ((firstDisk.used_gb / firstDisk.total_gb) * 100).toFixed(1);
+                 
+                 diskSummary.innerHTML = `
+                     <div class="disk-summary">
+                         <div class="disk-name">${firstDisk.name}</div>
+                         <div class="disk-progress">
+                             <div class="disk-progress-fill" style="width: ${percentage}%"></div>
+                         </div>
+                         <div class="disk-info">${firstDisk.used_gb.toFixed(1)}GB / ${firstDisk.total_gb.toFixed(1)}GB (${percentage}%)</div>
+                         <div style="font-size: 10px; color: #666; margin-top: 5px;">点击查看全部硬盘</div>
+                     </div>
+                 `;
+             }
+         }
+
+         /**
+          * 显示硬盘详情弹窗
+          */
+         function showDiskDetails() {
+             const diskDetailList = document.getElementById('diskDetailList');
+             diskDetailList.innerHTML = '';
+             
+             systemData.storage.disks.forEach((disk, index) => {
+                 const percentage = ((disk.used_gb / disk.total_gb) * 100).toFixed(1);
+                 const diskItem = document.createElement('div');
+                 diskItem.className = 'disk-item';
+                 diskItem.innerHTML = `
+                     <div class="disk-name">${disk.name} (硬盘 ${index + 1})</div>
+                     <div class="disk-progress">
+                         <div class="disk-progress-fill" style="width: ${percentage}%"></div>
+                     </div>
+                     <div class="disk-info">${disk.used_gb.toFixed(1)}GB / ${disk.total_gb.toFixed(1)}GB (${percentage}%)</div>
+                 `;
+                 diskDetailList.appendChild(diskItem);
+             });
+             
+             document.getElementById('diskOverlay').style.display = 'block';
+             document.getElementById('diskExpanded').style.display = 'block';
+         }
+
+         /**
+          * 隐藏硬盘详情弹窗
+          */
+         function hideDiskDetails() {
+             document.getElementById('diskOverlay').style.display = 'none';
+             document.getElementById('diskExpanded').style.display = 'none';
+         }
+
+        /**
+         * 更新网络信息显示
+         */
+        function updateNetworkInfo() {
+            if (!systemData.network) return;
+            
+            document.getElementById('uploadSpeed').textContent = systemData.network.up_mbps.toFixed(3);
+            document.getElementById('downloadSpeed').textContent = systemData.network.down_mbps.toFixed(3);
+        }
+
+        /**
+         * 生成IP地址下拉菜单
+         */
+        function generateIPDropdown() {
+            if (!systemData.network || !systemData.network.interfaces) return;
+            
+            const dropdown = document.getElementById('ipDropdown');
+            dropdown.innerHTML = '';
+            
+            systemData.network.interfaces.forEach(interface => {
+                const option = document.createElement('div');
+                option.className = 'ip-option';
+                option.innerHTML = `<strong>${interface.name}</strong><br>${interface.ip}`;
+                option.onclick = () => selectIP(interface.ip);
+                dropdown.appendChild(option);
+            });
+        }
+
+        /**
+         * 选择IP地址
+         */
+        function selectIP(ip) {
+            document.getElementById('currentIp').textContent = ip;
+            document.getElementById('ipDropdown').style.display = 'none';
+        }
+
+        /**
+         * 切换IP下拉菜单显示状态
+         */
+        function toggleIpDropdown() {
+            const dropdown = document.getElementById('ipDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        /**
+         * 主题切换功能
+         */
+        function toggleTheme() {
+            const body = document.body;
+            if (body.getAttribute('data-theme') === 'blue') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'pink');
+            } else {
+                body.setAttribute('data-theme', 'blue');
+                localStorage.setItem('theme', 'blue');
+            }
+        }
+
+        /**
+         * 更新时钟显示
+         */
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = hours + ':' + minutes;
+        }
+
+        /**
+          * 加载保存的主题
+          */
+         function loadTheme() {
+             const savedTheme = localStorage.getItem('theme');
+             if (savedTheme === 'blue') {
+                 document.body.setAttribute('data-theme', 'blue');
+             }
+         }
+
+         /**
+          * 全屏切换功能
+          */
+         function toggleFullscreen() {
+             if (!document.fullscreenElement) {
+                 document.documentElement.requestFullscreen().catch(err => {
+                     console.log('无法进入全屏模式:', err);
+                 });
+             } else {
+                 document.exitFullscreen();
+             }
+         }
+
+        // 点击其他地方关闭IP下拉菜单
+        document.addEventListener('click', function(event) {
+            const ipSelector = document.querySelector('.ip-selector');
+            if (!ipSelector.contains(event.target)) {
+                document.getElementById('ipDropdown').style.display = 'none';
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            loadTheme();
+            await initializeData();
+            
+            // 每秒更新时钟
+            setInterval(updateClock, 1000);
+            
+            // 每0.5秒从API获取最新数据
+             setInterval(async function() {
+                 const success = await fetchSystemData();
+                 if (success) {
+                     updateCPUInfo();
+                     updateMemoryInfo();
+                     updateDiskInfo();
+                     updateDiskSummary();
+                     updateNetworkInfo();
+                     generateIPDropdown();
+                 }
+             }, 500);
+        });
+    </script>
+</body>
+</html>
