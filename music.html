@@ -458,11 +458,27 @@
                 
                 // 添加播放和暂停事件监听
                 this.audioPlayer.addEventListener('play', () => {
+                    this.isPlaying = true;
+                    this.updatePlayButton();
                     this.notifyParentMusicStatus('musicPlay');
                 });
                 
                 this.audioPlayer.addEventListener('pause', () => {
+                    this.isPlaying = false;
+                    this.updatePlayButton();
                     this.notifyParentMusicStatus('musicPause');
+                });
+                
+                // 添加音频加载完成事件监听
+                this.audioPlayer.addEventListener('canplay', () => {
+                    // 音频可以播放时，检查并同步状态
+                    this.checkAndSyncAudioState();
+                });
+                
+                // 添加音频数据加载事件监听
+                this.audioPlayer.addEventListener('loadeddata', () => {
+                    // 音频数据加载完成时，检查并同步状态
+                    this.checkAndSyncAudioState();
                 });
             }
 
@@ -957,6 +973,55 @@
                         return this.allSongs;
                 }
             }
+            
+            /**
+             * 检查音频状态并同步UI
+             * 用于页面重新加载时恢复正确的播放状态显示
+             */
+            checkAndSyncAudioState() {
+                // 防止重复调用
+                if (this._syncingState) {
+                    return;
+                }
+                this._syncingState = true;
+                
+                // 延迟执行以确保音频元素完全加载
+                setTimeout(() => {
+                    try {
+                        if (!this.audioPlayer) {
+                            console.log('[v0] 音频元素未找到，跳过状态同步');
+                            return;
+                        }
+                        
+                        // 检查音频是否正在播放
+                        const isAudioPlaying = !this.audioPlayer.paused && !this.audioPlayer.ended && this.audioPlayer.currentTime >= 0 && this.audioPlayer.src;
+                        
+                        console.log('[v0] 音频状态检查:', {
+                            paused: this.audioPlayer.paused,
+                            ended: this.audioPlayer.ended,
+                            currentTime: this.audioPlayer.currentTime,
+                            src: this.audioPlayer.src,
+                            readyState: this.audioPlayer.readyState,
+                            isPlaying: isAudioPlaying,
+                            currentIsPlaying: this.isPlaying
+                        });
+                        
+                        // 只有当状态真的不同步时才更新
+                        if (isAudioPlaying !== this.isPlaying) {
+                            this.isPlaying = isAudioPlaying;
+                            this.updatePlayButton();
+                            
+                            if (isAudioPlaying) {
+                                console.log('[v0] 恢复播放状态：播放中');
+                            } else {
+                                console.log('[v0] 恢复播放状态：已暂停');
+                            }
+                        }
+                    } finally {
+                        this._syncingState = false;
+                    }
+                }, 100); // 延迟100ms确保DOM完全加载
+            }
 
             showFavorites() {
                 this.currentPlaylistType = 'likes';
@@ -980,6 +1045,9 @@
             if (savedTheme && savedTheme === 'blue') {
                 document.documentElement.setAttribute('data-theme', 'blue');
             }
+            
+            // 检查音频状态并同步UI
+            player.checkAndSyncAudioState();
         });
         
         // 监听主题变化事件（当index.html切换主题时同步更新）

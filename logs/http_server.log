@@ -4,3 +4,43 @@
 ::1 - - [12/Sep/2025 17:30:13] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
 ::1 - - [12/Sep/2025 17:30:14] code 404, message File not found
 ::1 - - [12/Sep/2025 17:30:14] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:45:17] "GET /?ide_webview_request_time=1757670317304 HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:45:17] "GET /music.html HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:45:17] code 404, message File not found
+::1 - - [12/Sep/2025 17:45:17] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:45:17] code 404, message File not found
+::1 - - [12/Sep/2025 17:45:17] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:33] "GET /music.html HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:46:33] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:33] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:34] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:34] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:34] "GET /?ide_webview_request_time=1757669413933 HTTP/1.1" 304 -
+::1 - - [12/Sep/2025 17:46:34] "GET /music.html HTTP/1.1" 304 -
+::1 - - [12/Sep/2025 17:46:34] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:34] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:34] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:34] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:35] "GET /?ide_webview_request_time=1757669413933 HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:46:35] "GET /music.html HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:46:35] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:35] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:36] "GET /config.json HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:46:36] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:36] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:42] "GET /music.html HTTP/1.1" 304 -
+::1 - - [12/Sep/2025 17:46:42] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:42] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:46:42] code 404, message File not found
+::1 - - [12/Sep/2025 17:46:42] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:47:21] "GET /music.html?ide_webview_request_time=1757670441169 HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:47:21] code 404, message File not found
+::1 - - [12/Sep/2025 17:47:21] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:47:21] code 404, message File not found
+::1 - - [12/Sep/2025 17:47:21] "GET /@vite/client HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:48:03] "GET /?ide_webview_request_time=1757670483256 HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:48:03] "GET /music.html HTTP/1.1" 200 -
+::1 - - [12/Sep/2025 17:48:03] code 404, message File not found
+::1 - - [12/Sep/2025 17:48:03] "GET /placeholder.svg?height=120&width=120 HTTP/1.1" 404 -
+::1 - - [12/Sep/2025 17:48:03] code 404, message File not found
+::1 - - [12/Sep/2025 17:48:03] "GET /@vite/client HTTP/1.1" 404 -
