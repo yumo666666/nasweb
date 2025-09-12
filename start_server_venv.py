@@ -18,6 +18,7 @@ import signal
 import subprocess
 import threading
 import venv
+import json
 from pathlib import Path
 
 
@@ -31,6 +32,7 @@ class VenvServerManager:
         self.logs_dir = self.script_dir / "logs"
         self.venv_dir = self.script_dir / "venv"
         self.venv_python = None
+        self.config = self.load_config()
         
     def setup_logging(self):
         """创建日志目录"""
@@ -61,6 +63,22 @@ class VenvServerManager:
             sys.exit(1)
             
         print(f"虚拟环境Python: {self.venv_python}")
+        
+    def load_config(self):
+        """从config.json加载配置"""
+        config_file = self.script_dir / "config.json"
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                print(f"配置加载成功: 前端端口={config.get('frontend_port', 8000)}, 后端端口={config.get('backend_port', 8001)}")
+                return config
+        except FileNotFoundError:
+            print(f"警告: 配置文件 {config_file} 不存在，使用默认端口")
+            return {"frontend_port": 8000, "backend_port": 8001}
+        except json.JSONDecodeError as e:
+            print(f"错误: 配置文件格式错误 - {e}")
+            print("使用默认端口")
+            return {"frontend_port": 8000, "backend_port": 8001}
         
     def install_dependencies(self):
         """在虚拟环境中安装依赖包"""
@@ -103,7 +121,7 @@ class VenvServerManager:
         print("检查依赖文件...")
         
         # 检查必要文件
-        required_files = ["system_info.py", "index.html"]
+        required_files = ["system_info.py", "index.html", "config.json"]
         for file in required_files:
             if not (self.script_dir / file).exists():
                 print(f"错误: 未找到{file}文件")
@@ -111,12 +129,13 @@ class VenvServerManager:
                 
     def start_api_server(self):
         """启动API服务器"""
-        print("启动Python API服务器 (端口8001)...")
+        backend_port = self.config.get('backend_port', 8001)
+        print(f"启动Python API服务器 (端口{backend_port})...")
         
         api_log = self.logs_dir / "api_server.log"
         with open(api_log, "w", encoding="utf-8") as log_file:
             self.api_process = subprocess.Popen(
-                [str(self.venv_python), "system_info.py", "--serve", "--port", "8001"],
+                [str(self.venv_python), "system_info.py", "--serve", "--port", str(backend_port)],
                 cwd=self.script_dir,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
@@ -128,12 +147,13 @@ class VenvServerManager:
         
     def start_http_server(self):
         """启动HTTP静态文件服务器"""
-        print("启动HTTP静态文件服务器 (端口8000)...")
+        frontend_port = self.config.get('frontend_port', 8000)
+        print(f"启动HTTP静态文件服务器 (端口{frontend_port})...")
         
         http_log = self.logs_dir / "http_server.log"
         with open(http_log, "w", encoding="utf-8") as log_file:
             self.http_process = subprocess.Popen(
-                [str(self.venv_python), "-m", "http.server", "8000"],
+                [str(self.venv_python), "-m", "http.server", str(frontend_port)],
                 cwd=self.script_dir,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
@@ -236,8 +256,10 @@ class VenvServerManager:
                 
             print("\n=== 服务器启动成功 ===")
             print(f"虚拟环境: {self.venv_dir}")
-            print("前端页面: http://localhost:8000")
-            print("API接口: http://localhost:8001/system-info")
+            frontend_port = self.config.get('frontend_port', 8000)
+            backend_port = self.config.get('backend_port', 8001)
+            print(f"前端页面: http://localhost:{frontend_port}")
+            print(f"API接口: http://localhost:{backend_port}/system-info")
             print("日志文件: logs/api_server.log, logs/http_server.log")
             print("\n按 Ctrl+C 停止服务器")
             

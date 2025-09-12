@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>系统监控仪表板</title>
+    <title>NAS网页控制台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -327,6 +328,121 @@
              justify-content: center;
          }
 
+         /* 白色覆盖层组件 */
+         .white-overlay {
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100vw;
+             height: 100vh;
+             background-color: var(--background-color);
+             z-index: -1;
+             opacity: 0;
+             transition: all 0.3s ease;
+             display: flex;
+             font-size: 18px;
+             color: var(--text-color);
+             padding: 0;
+             overflow: hidden;
+         }
+
+         /* 音乐播放状态显示样式 */
+         .music-status-btn {
+             background: var(--primary-color);
+             color: white;
+             border: none;
+             border-radius: 8px;
+             padding: 8px 16px;
+             font-size: 14px;
+             font-weight: bold;
+             cursor: pointer;
+             display: flex;
+             align-items: center;
+             gap: 8px;
+             transition: all 0.3s ease;
+             margin-left: 10px;
+         }
+
+         .music-status-btn:hover {
+             opacity: 0.8;
+             transform: scale(1.05);
+         }
+
+         .music-waves {
+             display: flex;
+             gap: 3px;
+             align-items: center;
+         }
+
+         .music-waves span {
+             width: 2px;
+             height: 16px;
+             background: white;
+             border-radius: 1px;
+             animation: wave 1.2s infinite ease-in-out;
+         }
+
+         .music-waves span:nth-child(1) { animation-delay: 0s; }
+         .music-waves span:nth-child(2) { animation-delay: 0.1s; }
+         .music-waves span:nth-child(3) { animation-delay: 0.2s; }
+         .music-waves span:nth-child(4) { animation-delay: 0.3s; }
+
+         @keyframes bounce {
+             0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+             40% { transform: translateY(-5px); }
+             60% { transform: translateY(-3px); }
+         }
+
+         @keyframes wave {
+             0%, 40%, 100% { transform: scaleY(0.4); }
+             20% { transform: scaleY(1); }
+         }
+
+         /* 覆盖层内部组件样式 */
+         .overlay-component {
+             border: 2px solid var(--border-color);
+             background-color: white;
+             border-radius: 8px;
+             padding: 10px;
+             display: flex;
+             flex-direction: column;
+             justify-content: center;
+             align-items: center;
+             font-size: 14px;
+             font-weight: bold;
+             transition: all 0.3s ease;
+         }
+
+         .overlay-component:hover {
+             transform: scale(1.02);
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+         }
+
+
+         
+
+         .music-btn.active::after {
+             content: '✓';
+             position: absolute;
+             top: 5px;
+             right: 5px;
+             background: rgba(255,255,255,0.9);
+             color: #333;
+             border-radius: 50%;
+             width: 20px;
+             height: 20px;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             font-size: 12px;
+             font-weight: bold;
+         }
+
+         .white-overlay.show {
+             z-index: 100;
+             opacity: 1;
+         }
+
          .disk-summary {
              padding: 10px;
              background: var(--background-color);
@@ -454,18 +570,39 @@
              opacity: 0.8;
              transform: scale(1.05);
          }
+
+         /* 音乐播放器进度条样式 */
+         .progress-container {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+             margin: 15px 0;
+             width: 100%;
+         }
+
+
     </style>
 </head>
 <body>
     <div class="grid-container">
         <!-- 顶部组件: 主题切换、全屏和IP选择 -->
          <div class="component component-top">
-             <div>
+             <div style="display: flex; align-items: center; gap: 10px;">
                  <button class="theme-toggle" onclick="toggleTheme()">🎨 主题切换</button>
                  <button class="fullscreen-btn" onclick="toggleFullscreen()">🔳 全屏</button>
+                 <!-- 音乐播放状态按钮 -->
+                 <button class="music-status-btn" id="musicStatusBtn" style="display: none;" onclick="showWhiteOverlay()">
+                     🎵 音乐播放中
+                     <div class="music-waves">
+                         <span></span>
+                         <span></span>
+                         <span></span>
+                         <span></span>
+                     </div>
+                 </button>
              </div>
              <div class="ip-selector">
-                 <div class="ip-display" onclick="toggleIpDropdown()" id="currentIp">192.168.101.102</div>
+                 <div class="ip-display" onclick="toggleIpDropdown()" id="currentIp">获取中...</div>
                  <div class="ip-dropdown" id="ipDropdown">
                      <!-- IP选项将通过JavaScript动态生成 -->
                  </div>
@@ -525,8 +662,8 @@
         </div>
         
         <!-- 组件5-8: 功能按钮 -->
-        <div class="component component-5">按钮1</div>
-        <div class="component component-6">按钮2</div>
+        <div class="component component-5" onclick="hideWhiteOverlay()">🏠 主页</div>
+        <div class="component component-6" onclick="showWhiteOverlay()">🎵 音乐</div>
         <div class="component component-7">按钮3</div>
         <div class="component component-8">按钮4</div>
         
@@ -565,7 +702,29 @@
                  <!-- 硬盘详细列表将通过JavaScript动态生成 -->
              </div>
          </div>
+
+         <!-- 白色覆盖层用于显示音乐组件 -->
+         <div id="whiteOverlay" class="white-overlay">
+             <iframe src="music.html" 
+                     style="width: 100%; height: 100%; border: none; border-radius: 8px;"
+                     frameborder="0">
+             </iframe>
+             <!-- 音乐播放状态显示 -->
+             <div id="musicPlayingStatus" class="music-playing-status" style="display: none;">
+                 <div class="music-playing-content">
+                     <div class="music-icon">🎵</div>
+                     <div class="music-text">音乐播放中</div>
+                     <div class="music-waves">
+                         <span></span>
+                         <span></span>
+                         <span></span>
+                         <span></span>
+                     </div>
+                 </div>
+             </div>
+         </div>
     </div>
+
 
     <script>
         // GIF文件列表（动态从服务器获取）
@@ -830,11 +989,17 @@
         /**
          * 生成IP地址下拉菜单
          */
+        /**
+         * 生成IP下拉菜单选项并设置默认IP
+         */
         function generateIPDropdown() {
             if (!systemData.network || !systemData.network.interfaces) return;
             
             const dropdown = document.getElementById('ipDropdown');
             dropdown.innerHTML = '';
+            
+            // 设置第一个IP为默认显示
+            let isFirstIP = true;
             
             systemData.network.interfaces.forEach(interface => {
                 const option = document.createElement('div');
@@ -842,6 +1007,12 @@
                 option.innerHTML = `<strong>${interface.name}</strong><br>${interface.ip}`;
                 option.onclick = () => selectIP(interface.ip);
                 dropdown.appendChild(option);
+                
+                // 设置第一个IP为默认显示
+                if (isFirstIP) {
+                    document.getElementById('currentIp').textContent = interface.ip;
+                    isFirstIP = false;
+                }
             });
         }
 
@@ -860,6 +1031,8 @@
             const dropdown = document.getElementById('ipDropdown');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         }
+
+
 
         /**
          * 主题切换功能
@@ -908,6 +1081,55 @@
              }
          }
 
+         /**
+          * 显示白色覆盖层
+          */
+         function showWhiteOverlay() {
+             const overlay = document.getElementById('whiteOverlay');
+             overlay.classList.add('show');
+             
+             // 监听iframe中的音乐播放状态
+             const iframe = overlay.querySelector('iframe');
+             if (iframe) {
+                 iframe.onload = function() {
+                     try {
+                         const iframeWindow = iframe.contentWindow;
+                         const iframeDocument = iframe.contentDocument;
+                         
+                         // 监听音频播放事件
+                         const audioPlayer = iframeDocument.getElementById('audioPlayer');
+                         if (audioPlayer) {
+                             audioPlayer.addEventListener('play', function() {
+                                 document.getElementById('musicStatusBtn').style.display = 'flex';
+                             });
+                             
+                             audioPlayer.addEventListener('pause', function() {
+                                 document.getElementById('musicStatusBtn').style.display = 'none';
+                             });
+                             
+                             audioPlayer.addEventListener('ended', function() {
+                                 document.getElementById('musicStatusBtn').style.display = 'none';
+                             });
+                         }
+                     } catch (error) {
+                         console.log('无法访问iframe内容，可能是跨域限制');
+                     }
+                 };
+             }
+         }
+
+         /**
+          * 隐藏白色覆盖层
+          */
+         function hideWhiteOverlay() {
+             const overlay = document.getElementById('whiteOverlay');
+             overlay.classList.remove('show');
+         }
+
+
+
+
+
         // 点击其他地方关闭IP下拉菜单
         document.addEventListener('click', function(event) {
             const ipSelector = document.querySelector('.ip-selector');
@@ -916,10 +1138,33 @@
             }
         });
 
+        /**
+         * 监听音乐播放状态的全局函数
+         */
+        function setupMusicStatusListener() {
+            // 监听来自music.html的消息
+            window.addEventListener('message', function(event) {
+                if (event.origin !== window.location.origin) return;
+                
+                if (event.data.type === 'musicPlay') {
+                    const musicStatusBtn = document.getElementById('musicStatusBtn');
+                    if (musicStatusBtn) {
+                        musicStatusBtn.style.display = 'flex';
+                    }
+                } else if (event.data.type === 'musicPause' || event.data.type === 'musicEnded') {
+                    const musicStatusBtn = document.getElementById('musicStatusBtn');
+                    if (musicStatusBtn) {
+                        musicStatusBtn.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', async function() {
             loadTheme();
             await initializeData();
+            setupMusicStatusListener();
             
             // 每秒更新时钟
             setInterval(updateClock, 1000);

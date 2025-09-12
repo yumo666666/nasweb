@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web音乐播放器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-color: #ff69b4;
+            --secondary-color: #ffb6c1;
+            --background-color: #ffe4e1;
+            --text-color: #333;
+            --border-color: #000;
+            --progress-bg: #f0f0f0;
+            
+            /* 音乐播放器专用变量 */
+            --background: linear-gradient(135deg, #ffe4e1, #ffb6c1, #ff69b4);
+            --foreground: #333;
+            --card: rgba(255, 255, 255, 0.95);
+            --card-foreground: #333;
+            --primary: #ff69b4;
+            --primary-foreground: #ffffff;
+            --primary-gradient: linear-gradient(135deg, #ff69b4, #ff1493);
+            --primary-hover: rgba(255, 105, 180, 0.1);
+            --primary-shadow: rgba(255, 105, 180, 0.3);
+            --primary-shadow-hover: rgba(255, 105, 180, 0.4);
+            --primary-shadow-light: rgba(255, 105, 180, 0.2);
+            --secondary: #ffb6c1;
+            --secondary-gradient: linear-gradient(135deg, #ffb6c1, #ffc0cb);
+            --secondary-shadow: rgba(255, 182, 193, 0.3);
+            --secondary-shadow-hover: rgba(255, 182, 193, 0.4);
+            --accent: #ff69b4;
+            --muted: rgba(255, 255, 255, 0.8);
+            --muted-foreground: #666;
+            --border: rgba(255, 105, 180, 0.2);
+            --radius: 1rem;
+        }
+
+        [data-theme="blue"] {
+            --primary-color: #4169e1;
+            --secondary-color: #87ceeb;
+            --background-color: #e6f3ff;
+            --text-color: #333;
+            --border-color: #000;
+            --progress-bg: #f0f0f0;
+            
+            /* 蓝色主题音乐播放器变量 */
+            --background: linear-gradient(135deg, #e6f3ff, #87ceeb, #4169e1);
+            --foreground: #333;
+            --card: rgba(255, 255, 255, 0.95);
+            --card-foreground: #333;
+            --primary: #4169e1;
+            --primary-foreground: #ffffff;
+            --primary-gradient: linear-gradient(135deg, #4169e1, #6495ed);
+            --primary-hover: rgba(65, 105, 225, 0.1);
+            --primary-shadow: rgba(65, 105, 225, 0.3);
+            --primary-shadow-hover: rgba(65, 105, 225, 0.4);
+            --primary-shadow-light: rgba(65, 105, 225, 0.2);
+            --secondary: #87ceeb;
+            --secondary-gradient: linear-gradient(135deg, #87ceeb, #b0e0e6);
+            --secondary-shadow: rgba(135, 206, 235, 0.3);
+            --secondary-shadow-hover: rgba(135, 206, 235, 0.4);
+            --accent: #4169e1;
+            --muted: rgba(255, 255, 255, 0.8);
+            --muted-foreground: #666;
+            --border: rgba(65, 105, 225, 0.2);
+            --radius: 1rem;
+        }
+
+        body {
+            background: var(--background);
+            min-height: 100vh;
+        }
+
+        .vinyl-record {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #1f2937, #374151);
+            position: relative;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            /* 添加flex布局来居中专辑封面 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 添加专辑封面样式 */
+        .album-cover {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 添加唱片旋转动画 */
+        .vinyl-record.playing {
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: var(--primary-foreground);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 20px;
+            box-shadow: 0 4px 15px var(--primary-shadow);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px var(--primary-shadow-hover);
+        }
+
+        .control-btn.secondary {
+            background: var(--secondary-gradient);
+            box-shadow: 0 4px 15px var(--secondary-shadow);
+        }
+
+        .control-btn.secondary:hover {
+            box-shadow: 0 6px 20px var(--secondary-shadow-hover);
+        }
+
+        .song-item {
+            padding: 16px;
+            background: var(--card);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .song-item:hover {
+            background: var(--primary-hover);
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px var(--primary-shadow-light);
+        }
+
+        .song-item.active {
+            background: var(--primary-gradient);
+            color: var(--primary-foreground);
+            box-shadow: 0 4px 15px var(--primary-shadow);
+        }
+
+        .favorite-btn {
+            color: var(--muted-foreground);
+            transition: all 0.2s ease;
+            font-size: 28px;
+        }
+
+        .favorite-btn.active {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-shadow);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 20px;
+            height: 100vh;
+            padding: 10px 30px;
+            background: var(--background);
+            color: var(--foreground);
+        }
+
+        .player-area {
+            grid-column: 1 / 5;
+            grid-row: 1 / 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 32px;
+            position: relative;
+            backdrop-filter: blur(20px);
+            border: 3px solid #000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .playlist-area {
+            grid-column: 5 / 7;
+            grid-row: 1 / 3;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+            border: 3px solid #000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 隐藏歌单区域滚动条 */
+        .playlist-area::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .playlist-area {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .favorites-btn {
+            grid-column: 5 / 6;
+            grid-row: 3 / 4;
+        }
+
+        .shuffle-btn {
+            grid-column: 6 / 7;
+            grid-row: 3 / 4;
+        }
+
+        .action-btn {
+            border: 3px solid #000;
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+            height: 100%;
+            font-size: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn.favorites {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .action-btn.shuffle {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .playlist-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-hover);
+        }
+
+        /* 添加进度条样式和轮廓线 */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 8px var(--primary-shadow);
+        }
+
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: left 0.1s ease;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-thumb:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div class="player-area">
+            <button class="favorite-btn absolute top-6 right-6" id="favoriteBtn">
+                ♡
+            </button>
+            <button class="absolute top-6 left-6" onclick="parent.hideWhiteOverlay()" style="background: linear-gradient(135deg, #6b7280, #9ca3af); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(107, 114, 128, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(107, 114, 128, 0.3)'">
+                ×
+            </button>
+
+            
+            <div class="vinyl-record mb-8" id="vinylRecord">
+                <img src="/placeholder.svg?height=120&width=120" 
+                     alt="专辑封面" class="album-cover" id="albumCover">
+            </div>
+            
+            <h2 class="text-2xl font-bold mb-6 text-center" id="songTitle">选择一首歌曲开始播放</h2>
+            
+            <div class="w-full max-w-md mb-4">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    <div class="progress-thumb" id="progressThumb" style="left: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between w-full max-w-md mb-8 text-sm font-medium">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <button class="control-btn secondary" id="prevBtn">⏮</button>
+                <button class="control-btn" id="playPauseBtn">▶</button>
+                <button class="control-btn secondary" id="nextBtn">⏭</button>
+            </div>
+        </div>
+        
+        <div class="playlist-area">
+            <div class="playlist-header">
+                <span style="font-size: 24px;">🎵</span>
+                <h3 class="text-xl font-bold" id="playlistTitle">歌单</h3>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">请选择收藏或随机模式</p>
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索歌曲...">
+            <div id="playlist">
+            </div>
+        </div>
+        
+        <button class="action-btn favorites" id="showFavoritesBtn">
+            <span style="font-size: 24px;">❤️</span>
+            我的收藏
+        </button>
+        
+        <button class="action-btn shuffle" id="shufflePlayBtn">
+            <span style="font-size: 24px;">🔀</span>
+            随机播放
+        </button>
+    </div>
+
+    <audio id="audioPlayer" preload="metadata"></audio>
+
+    <script>
+        class MusicPlayer {
+            constructor() {
+                this.apiBase = 'http://192.168.101.1:4533/rest';
+                this.apiParams = {
+                    u: 'tyh', // 用户名
+                    p: 'tyh200506240833', // 密码
+                    v: '1.16.0', // API版本
+                    c: 'WebMusicPlayer', // 客户端标识
+                    f: 'json' // 返回JSON格式
+                };
+                this.currentSong = null;
+                this.currentIndex = 0;
+                this.isPlaying = false;
+                this.playlist = [];
+                this.allSongs = []; // 添加全部歌曲存储
+                this.myLikesPlaylist = null; // 我的喜欢歌单
+                this.myLikesSongs = []; // 我的喜欢歌单中的歌曲
+                this.currentPlaylistType = 'all'; // 'all', 'likes', 'shuffle'
+                
+                this.initElements();
+                this.setupEventListeners();
+                this.loadPlaylist();
+                this.loadMyLikesPlaylist(); // 加载我的喜欢歌单
+            }
+            
+            initElements() {
+                this.audioPlayer = document.getElementById('audioPlayer');
+                this.vinylRecord = document.getElementById('vinylRecord');
+                this.albumCover = document.getElementById('albumCover');
+                this.songTitle = document.getElementById('songTitle');
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.favoriteBtn = document.getElementById('favoriteBtn');
+                this.progressBar = document.getElementById('progressBar');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressThumb = document.getElementById('progressThumb');
+                this.currentTime = document.getElementById('currentTime');
+                this.totalTime = document.getElementById('totalTime');
+                this.playlistContainer = document.getElementById('playlist');
+                this.showFavoritesBtn = document.getElementById('showFavoritesBtn');
+                this.shufflePlayBtn = document.getElementById('shufflePlayBtn');
+                this.searchInput = document.getElementById('searchInput');
+                this.playlistTitle = document.getElementById('playlistTitle');
+            }
+            
+            setupEventListeners() {
+                this.playPauseBtn.addEventListener('click', () => this.togglePlay());
+                this.prevBtn.addEventListener('click', () => this.previousSong());
+                this.nextBtn.addEventListener('click', () => this.nextSong());
+                this.favoriteBtn.addEventListener('click', () => this.toggleFavorite());
+                this.showFavoritesBtn.addEventListener('click', () => this.showFavorites());
+                this.shufflePlayBtn.addEventListener('click', () => this.shufflePlay());
+                this.searchInput.addEventListener('input', (e) => this.searchSongs(e.target.value));
+                
+                this.progressBar.addEventListener('click', (e) => this.seekTo(e));
+                this.progressThumb.addEventListener('mousedown', (e) => this.startDrag(e));
+                
+                this.audioPlayer.addEventListener('timeupdate', () => this.updateProgress());
+                this.audioPlayer.addEventListener('ended', () => {
+                    this.nextSong();
+                    this.notifyParentMusicStatus('musicEnded');
+                });
+                this.audioPlayer.addEventListener('loadedmetadata', () => this.updateDuration());
+                
+                // 添加播放和暂停事件监听
+                this.audioPlayer.addEventListener('play', () => {
+                    this.notifyParentMusicStatus('musicPlay');
+                });
+                
+                this.audioPlayer.addEventListener('pause', () => {
+                    this.notifyParentMusicStatus('musicPause');
+                });
+            }
+
+            async loadMyLikesPlaylist() {
+                try {
+                    console.log('[v0] 开始加载歌单列表');
+                    const url = this.buildApiUrl('getPlaylists');
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        const playlists = data['subsonic-response'].playlists?.playlist || [];
+                        console.log('[v0] 找到歌单:', playlists.map(p => p.name));
+                        
+                        this.myLikesPlaylist = playlists.find(playlist => 
+                            playlist.name === '我的喜欢' || 
+                            playlist.name === 'My Likes' || 
+                            playlist.name === 'Favorites' ||
+                            playlist.name.toLowerCase().includes('like') ||
+                            playlist.name.toLowerCase().includes('favorite')
+                        );
+                        
+                        if (this.myLikesPlaylist) {
+                            console.log('[v0] 找到我的喜欢歌单:', this.myLikesPlaylist.name);
+                            await this.loadMyLikesSongs();
+                        } else {
+                            console.log('[v0] 未找到我的喜欢歌单，将创建一个');
+                            await this.createMyLikesPlaylist();
+                        }
+                    }
+                } catch (error) {
+                    console.error('[v0] 加载歌单失败:', error);
+                    this.myLikesSongs = JSON.parse(localStorage.getItem('myLikes') || '[]');
+                }
+            }
+
+            async createMyLikesPlaylist() {
+                try {
+                    const url = this.buildApiUrl('createPlaylist', { name: '我的喜欢' });
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        console.log('[v0] 成功创建我的喜欢歌单');
+                        await this.loadMyLikesPlaylist();
+                    }
+                } catch (error) {
+                    console.error('[v0] 创建歌单失败:', error);
+                }
+            }
+
+            async loadMyLikesSongs() {
+                if (!this.myLikesPlaylist) return;
+                
+                try {
+                    const url = this.buildApiUrl('getPlaylist', { id: this.myLikesPlaylist.id });
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        const playlist = data['subsonic-response'].playlist;
+                        const songs = playlist.entry || [];
+                        
+                        this.myLikesSongs = songs.map(song => ({
+                            id: song.id,
+                            title: song.title,
+                            artist: song.artist,
+                            album: song.album,
+                            duration: song.duration,
+                            url: this.buildApiUrl('stream', { id: song.id }),
+                            cover: song.coverArt ? this.buildApiUrl('getCoverArt', { id: song.coverArt, size: 120 }) : '/placeholder.svg?height=120&width=120'
+                        }));
+                        
+                        console.log('[v0] 已加载我的喜欢歌曲:', this.myLikesSongs.length);
+                        this.renderPlaylist();
+                    }
+                } catch (error) {
+                    console.error('[v0] 加载我的喜欢歌曲失败:', error);
+                }
+            }
+            
+            async loadPlaylist() {
+                try {
+                    console.log('[v0] 开始加载Subsonic歌曲列表');
+                    const pingUrl = this.buildApiUrl('ping');
+                    console.log('[v0] 测试连接:', pingUrl);
+                    
+                    const pingResponse = await fetch(pingUrl);
+                    const pingData = await pingResponse.json();
+                    
+                    if (pingData['subsonic-response']?.status !== 'ok') {
+                        throw new Error('服务器连接失败: ' + (pingData['subsonic-response']?.error?.message || '未知错误'));
+                    }
+                    
+                    console.log('[v0] 服务器连接成功，开始获取歌曲');
+                    const url = this.buildApiUrl('getRandomSongs', { size: 50 });
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    console.log('[v0] API响应:', data);
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        const songs = data['subsonic-response'].randomSongs?.song || [];
+                        this.allSongs = songs.map(song => ({
+                            id: song.id,
+                            title: song.title,
+                            artist: song.artist,
+                            album: song.album,
+                            duration: song.duration,
+                            url: this.buildApiUrl('stream', { id: song.id }),
+                            cover: song.coverArt ? this.buildApiUrl('getCoverArt', { id: song.coverArt, size: 120 }) : '/placeholder.svg?height=120&width=120'
+                        }));
+                        this.playlist = [...this.allSongs]; // 复制到当前播放列表
+                        console.log('[v0] 成功加载歌曲:', this.playlist.length);
+                        this.renderPlaylist();
+                    } else {
+                        throw new Error('API返回错误状态: ' + (data['subsonic-response']?.error?.message || '未知错误'));
+                    }
+                } catch (error) {
+                    console.error('[v0] 加载播放列表失败:', error);
+                    this.showError(`连接失败: ${error.message}`);
+                    this.allSongs = [
+                        { 
+                            id: '1', 
+                            title: '示例歌曲 1', 
+                            artist: '艺术家 1', 
+                            album: '专辑 1',
+                            url: '/placeholder.mp3', 
+                            cover: '/placeholder.svg?height=120&width=120' 
+                        },
+                        { 
+                            id: '2', 
+                            title: '示例歌曲 2', 
+                            artist: '艺术家 2', 
+                            album: '专辑 2',
+                            url: '/placeholder.mp3', 
+                            cover: '/placeholder.svg?height=120&width=120' 
+                        },
+                        { 
+                            id: '3', 
+                            title: '示例歌曲 3', 
+                            artist: '艺术家 3', 
+                            album: '专辑 3',
+                            url: '/placeholder.mp3', 
+                            cover: '/placeholder.svg?height=120&width=120' 
+                        }
+                    ];
+                    this.playlist = [...this.allSongs];
+                    this.renderPlaylist();
+                }
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                errorDiv.textContent = message;
+                document.body.appendChild(errorDiv);
+                
+                setTimeout(() => {
+                    document.body.removeChild(errorDiv);
+                }, 5000);
+            }
+            
+            renderPlaylist() {
+                this.playlistContainer.innerHTML = '';
+                const currentPlaylist = this.getCurrentPlaylist();
+                
+                this.playlistTitle.textContent = this.getPlaylistTitle();
+                
+                currentPlaylist.forEach((song, index) => {
+                    const songItem = document.createElement('div');
+                    songItem.className = `song-item ${this.currentSong && this.currentSong.id === song.id ? 'active' : ''}`;
+                    songItem.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium truncate">${song.title}</div>
+                                <div class="text-sm opacity-70 truncate">${song.artist}${song.album ? ' - ' + song.album : ''}</div>
+                            </div>
+                            <button class="text-lg ml-2 ${this.isInMyLikes(song.id) ? 'text-red-500' : 'text-gray-400'}" 
+                                    onclick="player.toggleSongInMyLikes('${song.id}')">♡</button>
+                        </div>
+                    `;
+                    songItem.addEventListener('click', () => this.playSong(song, index));
+                    this.playlistContainer.appendChild(songItem);
+                });
+            }
+            
+            getPlaylistTitle() {
+                switch (this.currentPlaylistType) {
+                    case 'likes':
+                        return `我的喜欢 (${this.getCurrentPlaylist().length} 首)`;
+                    case 'shuffle':
+                        return `随机播放 (${this.getCurrentPlaylist().length} 首)`;
+                    default:
+                        return `全部歌曲 (${this.getCurrentPlaylist().length} 首)`;
+                }
+            }
+
+            playSong(song, index) {
+                console.log('[v0] 开始播放歌曲:', song.title);
+                this.currentSong = song;
+                this.currentIndex = index;
+                this.audioPlayer.src = song.url;
+                this.songTitle.textContent = `${song.title} - ${song.artist}`;
+                this.albumCover.src = song.cover;
+                this.updateFavoriteButton();
+                this.renderPlaylist();
+                
+                this.audioPlayer.play().then(() => {
+                    console.log('[v0] 歌曲播放成功');
+                    this.isPlaying = true;
+                    this.updatePlayButton();
+                }).catch(error => {
+                    console.error('[v0] 播放失败:', error);
+                    this.showError('播放失败，请检查网络连接');
+                });
+            }
+            
+            togglePlay() {
+                if (!this.currentSong) {
+                    if (this.playlist.length > 0) {
+                        this.playSong(this.playlist[0], 0);
+                    }
+                    return;
+                }
+                
+                if (this.isPlaying) {
+                    this.audioPlayer.pause();
+                    this.isPlaying = false;
+                } else {
+                    this.audioPlayer.play().then(() => {
+                        this.isPlaying = true;
+                    });
+                }
+                this.updatePlayButton();
+            }
+            
+            previousSong() {
+                const currentPlaylist = this.getCurrentPlaylist();
+                if (currentPlaylist.length === 0) return;
+                
+                this.currentIndex = (this.currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+                this.playSong(currentPlaylist[this.currentIndex], this.currentIndex);
+            }
+            
+            nextSong() {
+                const currentPlaylist = this.getCurrentPlaylist();
+                if (currentPlaylist.length === 0) return;
+                
+                this.currentIndex = (this.currentIndex + 1) % currentPlaylist.length;
+                this.playSong(currentPlaylist[this.currentIndex], this.currentIndex);
+            }
+            
+            async toggleFavorite() {
+                if (!this.currentSong) return;
+                
+                await this.toggleSongInMyLikes(this.currentSong.id);
+            }
+
+            isInMyLikes(songId) {
+                return this.myLikesSongs.some(song => song.id === songId);
+            }
+
+            async toggleSongInMyLikes(songId) {
+                if (!this.myLikesPlaylist) {
+                    console.log('[v0] 我的喜欢歌单不存在，尝试创建');
+                    await this.createMyLikesPlaylist();
+                    if (!this.myLikesPlaylist) return;
+                }
+
+                const isInLikes = this.isInMyLikes(songId);
+                
+                try {
+                    if (isInLikes) {
+                        const songIndex = this.myLikesSongs.findIndex(song => song.id === songId);
+                        if (songIndex !== -1) {
+                            const url = this.buildApiUrl('updatePlaylist', { 
+                                playlistId: this.myLikesPlaylist.id,
+                                songIndexToRemove: songIndex
+                            });
+                            const response = await fetch(url);
+                            const data = await response.json();
+                            
+                            if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                                this.myLikesSongs.splice(songIndex, 1);
+                                console.log('[v0] 已从我的喜欢中移除歌曲');
+                            }
+                        }
+                    } else {
+                        const url = this.buildApiUrl('updatePlaylist', { 
+                            playlistId: this.myLikesPlaylist.id,
+                            songIdToAdd: songId
+                        });
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        
+                        if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                            await this.loadMyLikesSongs();
+                            console.log('[v0] 已添加歌曲到我的喜欢');
+                        }
+                    }
+                    
+                    this.updateFavoriteButton();
+                    this.renderPlaylist();
+                } catch (error) {
+                    console.error('[v0] 更新我的喜欢失败:', error);
+                    let localLikes = JSON.parse(localStorage.getItem('myLikes') || '[]');
+                    const songIndex = localLikes.findIndex(id => id === songId);
+                    
+                    if (songIndex > -1) {
+                        localLikes.splice(songIndex, 1);
+                    } else {
+                        localLikes.push(songId);
+                    }
+                    
+                    localStorage.setItem('myLikes', JSON.stringify(localLikes));
+                    this.updateFavoriteButton();
+                    this.renderPlaylist();
+                }
+            }
+            
+            async searchSongs(query) {
+                if (!query.trim()) {
+                    this.currentPlaylistType = 'all';
+                    this.renderPlaylist();
+                    return;
+                }
+                
+                try {
+                    const url = this.buildApiUrl('search3', { 
+                        query: query,
+                        songCount: 20,
+                        artistCount: 0,
+                        albumCount: 0
+                    });
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        const songs = data['subsonic-response'].searchResult3?.song || [];
+                        this.playlist = songs.map(song => ({
+                            id: song.id,
+                            title: song.title,
+                            artist: song.artist,
+                            album: song.album,
+                            duration: song.duration,
+                            url: this.buildApiUrl('stream', { id: song.id }),
+                            cover: song.coverArt ? this.buildApiUrl('getCoverArt', { id: song.coverArt, size: 120 }) : '/placeholder.svg?height=120&width=120'
+                        }));
+                        this.currentPlaylistType = 'search';
+                        this.renderPlaylist();
+                    }
+                } catch (error) {
+                    console.error('[v0] 搜索失败:', error);
+                    const filteredSongs = this.allSongs.filter(song => 
+                        song.title.toLowerCase().includes(query.toLowerCase()) ||
+                        song.artist.toLowerCase().includes(query.toLowerCase()) ||
+                        song.album.toLowerCase().includes(query.toLowerCase())
+                    );
+                    this.playlist = filteredSongs;
+                    this.currentPlaylistType = 'search';
+                    this.renderPlaylist();
+                }
+            }
+            
+            async shufflePlay() {
+                try {
+                    console.log('[v0] 开始随机播放');
+                    const url = this.buildApiUrl('getRandomSongs', { size: 20 });
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['subsonic-response'] && data['subsonic-response'].status === 'ok') {
+                        const songs = data['subsonic-response'].randomSongs?.song || [];
+                        const shuffledPlaylist = songs.map(song => ({
+                            id: song.id,
+                            title: song.title,
+                            artist: song.artist,
+                            album: song.album,
+                            duration: song.duration,
+                            url: this.buildApiUrl('stream', { id: song.id }),
+                            cover: song.coverArt ? this.buildApiUrl('getCoverArt', { id: song.coverArt, size: 120 }) : '/placeholder.svg?height=120&width=120'
+                        }));
+                        
+                        this.playlist = shuffledPlaylist;
+                        this.currentPlaylistType = 'shuffle';
+                        
+                        if (shuffledPlaylist.length > 0) {
+                            this.playSong(shuffledPlaylist[0], 0);
+                        }
+                        this.renderPlaylist();
+                    }
+                } catch (error) {
+                    console.error('[v0] 随机播放失败:', error);
+                    this.currentPlaylistType = 'shuffle';
+                    const shuffledPlaylist = this.getCurrentPlaylist();
+                    if (shuffledPlaylist.length > 0) {
+                        this.playSong(shuffledPlaylist[0], 0);
+                    }
+                    this.renderPlaylist();
+                }
+            }
+            
+            updatePlayButton() {
+                this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
+                /* 添加唱片旋转控制 */
+                if (this.isPlaying) {
+                    this.vinylRecord.classList.add('playing');
+                } else {
+                    this.vinylRecord.classList.remove('playing');
+                }
+            }
+            
+            updateFavoriteButton() {
+                if (this.currentSong) {
+                    const isInLikes = this.isInMyLikes(this.currentSong.id);
+                    this.favoriteBtn.textContent = isInLikes ? '♥' : '♡';
+                    this.favoriteBtn.className = `favorite-btn absolute top-6 right-6 ${isInLikes ? 'active' : ''}`;
+                }
+            }
+            
+            updateProgress() {
+                if (this.audioPlayer.duration) {
+                    const progress = (this.audioPlayer.currentTime / this.audioPlayer.duration) * 100;
+                    this.progressFill.style.width = `${progress}%`;
+                    this.progressThumb.style.left = `${progress}%`;
+                    this.currentTime.textContent = this.formatTime(this.audioPlayer.currentTime);
+                }
+            }
+            
+            updateDuration() {
+                this.totalTime.textContent = this.formatTime(this.audioPlayer.duration);
+            }
+            
+            seekTo(e) {
+                if (!this.audioPlayer.duration) return;
+                
+                const rect = this.progressBar.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                this.audioPlayer.currentTime = percent * this.audioPlayer.duration;
+            }
+            
+            startDrag(e) {
+                e.preventDefault();
+                const onMouseMove = (e) => {
+                    const rect = this.progressBar.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    if (this.audioPlayer.duration) {
+                        this.audioPlayer.currentTime = percent * this.audioPlayer.duration;
+                    }
+                };
+                
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+            
+            formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            /**
+             * 通知父页面音乐播放状态
+             */
+            notifyParentMusicStatus(type) {
+                // 如果在iframe中，向父页面发送消息
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: type }, window.location.origin);
+                }
+                // 如果是独立页面，向主页面发送消息
+                if (window.opener) {
+                    window.opener.postMessage({ type: type }, window.location.origin);
+                }
+            }
+            
+            getCurrentPlaylist() {
+                switch (this.currentPlaylistType) {
+                    case 'likes':
+                        return this.myLikesSongs;
+                    case 'shuffle':
+                        return this.playlist; // 随机播放时使用当前的随机列表
+                    default:
+                        return this.allSongs;
+                }
+            }
+
+            showFavorites() {
+                this.currentPlaylistType = 'likes';
+                this.renderPlaylist();
+            }
+
+            buildApiUrl(endpoint, additionalParams = {}) {
+                const params = { ...this.apiParams, ...additionalParams };
+                const queryString = Object.keys(params)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+                    .join('&');
+                return `${this.apiBase}/${endpoint}?${queryString}`;
+            }
+        }
+        
+        const player = new MusicPlayer();
+        
+        // 页面加载时从localStorage读取主题设置（与index.html同步）
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme && savedTheme === 'blue') {
+                document.documentElement.setAttribute('data-theme', 'blue');
+            }
+        });
+        
+        // 监听主题变化事件（当index.html切换主题时同步更新）
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'theme') {
+                const newTheme = e.newValue;
+                if (newTheme === 'blue') {
+                    document.documentElement.setAttribute('data-theme', 'blue');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -280,7 +280,7 @@ def get_storage_info() -> Dict[str, Any]:
 # ======================= 网络信息 =======================
 
 def get_ip_interfaces() -> List[Tuple[str, str]]:
-    """获取所有具有IPv4地址的网卡及其IP。屏蔽以 br- 开头的 bridge 网卡（如 Docker 的 br-f86755ba2795）。"""
+    """获取所有具有IPv4地址的网卡及其IP。屏蔽以 br- 开头的 bridge 网卡（如 Docker 的 br-f86755ba2795）和 lo 回环网卡。"""
     import socket
     res: List[Tuple[str, str]] = []
     addrs = psutil.net_if_addrs()
@@ -288,6 +288,9 @@ def get_ip_interfaces() -> List[Tuple[str, str]]:
     for name, arr in addrs.items():
         # 屏蔽 bridge 网卡（如 Docker 的 br-xxxxxxxxxxxx）
         if name.startswith('br-'):
+            continue
+        # 屏蔽回环网卡（Linux的lo和Windows的Loopback）
+        if name == 'lo' or 'Loopback' in name:
             continue
         for a in arr:
             fam = getattr(a, 'family', None)
