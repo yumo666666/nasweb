@@ -26,17 +26,17 @@
 pip install psutil fastapi uvicorn
 
 # 启动服务器
-python start_server.py
+python start_server_venv.py
 ```
 
 ### 方法二：使用Linux Shell脚本
 
 ```bash
 # 给脚本执行权限
-chmod +x start_server.sh
+chmod +x start_server_venv.sh
 
 # 启动服务器
-./start_server.sh
+./start_server_venv.sh
 ```
 
 ### 方法三：手动启动
@@ -113,10 +113,10 @@ pip install fastapi uvicorn
 
 ```bash
 # 给脚本执行权限
-chmod +x start_server.sh
+chmod +x start_server_venv.sh
 
 # 如果需要监控某些系统信息，可能需要sudo权限
-sudo python start_server.py
+sudo python start_server_venv.py
 ```
 
 ## 开发说明
